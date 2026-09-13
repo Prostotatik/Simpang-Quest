@@ -1,6 +1,6 @@
 # **Simpang Quest by Britney and Her Bodyguards**
 
-**Team:** Moroz Fedor, Shawn Lee, Jing Xian, Hao Wen Chan
+**Team:** Moroz Fedor, Shawn Lee Yen Zheng, Britney Chiu Jing Xian, Chan Hao Wen
 
 **Problem Statement:** Planning an Escape
 
