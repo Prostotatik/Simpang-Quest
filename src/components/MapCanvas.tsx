@@ -178,13 +178,13 @@ export function MapCanvas() {
       })),
       true,
     )
-    setHubStops(plan.hubs)
     setGoldLegs(plan.legs.map((l) => ({ ...l, path: curveBetween(l.from, l.to) })))
 
     // Scouting probes cross water the same way the golden route does: through a
     // real terminal. Drawing them straight from anchor to island is what put a
     // ferry over dry land — so every probe goes through `buildLegs` too, which
     // breaks a sea hop into drive → crossing → drive via the nearest hubs.
+    const probeHubs: HubStop[] = []
     const grey: Leg[] = scoutLinks.flatMap((link) => {
       const target = poiById(link.toPoiId)
       if (!target) return []
@@ -198,6 +198,7 @@ export function MapCanvas() {
         // has to declare where it stands or the hop reads as a plain drive.
         { id: link.fromId, drivable: !NON_DRIVABLE.has(link.fromId) },
       )
+      probeHubs.push(...probe.hubs)
 
       return probe.legs.map((leg) => ({
         ...leg,
@@ -208,6 +209,14 @@ export function MapCanvas() {
       }))
     })
     setGreyLegs(grey)
+
+    // A terminal earns its pin whichever route reaches it: showing only the
+    // golden route's hubs left scouted crossings sailing from nowhere.
+    const byHub = new Map<string, HubStop>()
+    ;[...plan.hubs, ...probeHubs].forEach((h) => {
+      if (!byHub.has(h.hub.id)) byHub.set(h.hub.id, h)
+    })
+    setHubStops([...byHub.values()])
 
     if (generating) return () => { live = false }
 
