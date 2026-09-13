@@ -35,7 +35,7 @@ export const inclusiveDays = (a: string, b: string) =>
 const EMPTY_LIMITS: TripLimits = {
   windowDays: 1,
   capDays: 1,
-  capNames: [],
+  cappedByMember: false,
   requestedRegions: [],
   radiusFrom: 'days',
 }
@@ -164,9 +164,7 @@ export const deriveTrip = (members: Member[], previous: Trip): Trip => {
   // The binding limit: nobody is dragged past the length they signed up for.
   const capDays = Math.max(1, Math.min(...members.map((m) => m.maxTripDays)))
   const days = Math.max(1, Math.min(window.days, capDays))
-  const capNames = capDays < window.days
-    ? members.filter((m) => m.maxTripDays === capDays).map((m) => m.name)
-    : []
+  const cappedByMember = capDays < window.days
 
   const regions = requestedRegions(members)
   const radius = deriveRadius(days, regions, startLocationId)
@@ -181,7 +179,7 @@ export const deriveTrip = (members: Member[], previous: Trip): Trip => {
     limits: {
       windowDays: window.days,
       capDays,
-      capNames,
+      cappedByMember,
       requestedRegions: regions,
       radiusFrom: radius.from,
     },

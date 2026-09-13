@@ -214,10 +214,6 @@ export function TripEditor() {
   if (!open) return null
 
   const { limits } = trip
-  const capped = limits.capNames.length > 0
-  const names = limits.capNames.length > 2
-    ? `${limits.capNames.slice(0, 2).join(', ')} and ${limits.capNames.length - 2} more`
-    : limits.capNames.join(' and ')
 
   return (
     <Shell
@@ -238,9 +234,9 @@ export function TripEditor() {
         <Derived
           label="Trip length"
           value={`${trip.maxDurationDays} ${trip.maxDurationDays === 1 ? 'day' : 'days'}`}
-          from={capped
-            ? `${names} will not travel longer than ${limits.capDays} days, so the ${limits.windowDays}-day window is cut short`
-            : 'the shared free window — nobody’s personal limit is tighter'}
+          from={limits.cappedByMember
+            ? `the party will not travel longer than ${limits.capDays} days, so the ${limits.windowDays}-day window is cut short`
+            : 'the shared free window — no personal limit is tighter'}
         />
         <Derived label="Starting from" value={startById(trip.startLocationId).name}
           from="the hub nearest the party" />

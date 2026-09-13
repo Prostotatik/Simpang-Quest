@@ -72,10 +72,20 @@ export function QuestJournal() {
     return () => ro.disconnect()
   }, [])
 
-  const itinerary = useStore((s) => s.itinerary)
+  const allStops = useStore((s) => s.itinerary)
+  const reveal = useStore((s) => s.reveal)
+  const generating = useStore((s) => s.generating)
   const cycleStatus = useStore((s) => s.cycleStatus)
   const setPopup = useStore((s) => s.setPopup)
   const selectedPoiId = useStore((s) => s.selectedPoiId)
+
+  // The journal writes itself as the orchestrator scouts: a stop is only in the
+  // book once its marker has resolved on the map. Anything still being walked
+  // to has not been decided yet, so it has no line here.
+  const itinerary = useMemo(
+    () => allStops.filter((stop) => reveal[stop.poiId] === 'resolved'),
+    [allStops, reveal],
+  )
   const done = itinerary.filter((i) => i.status === 'Completed').length
 
   // Group into days, carrying each day's running cost and hours for the banner.
@@ -108,7 +118,9 @@ export function QuestJournal() {
       icon={<IconBook className="h-[20px] w-[20px] shrink-0 text-ink-800" />}
       meta={
         <span className="shrink-0 font-body text-[13px] text-ink-600">
-          {done}/{itinerary.length} done
+          {generating
+            ? `${itinerary.length}/${allStops.length} found`
+            : `${done}/${itinerary.length} done`}
         </span>
       }
       bodyMaxHeight={bodyMaxHeight}
@@ -137,8 +149,12 @@ export function QuestJournal() {
                   const poi = poiById(stop.poiId)
                   if (!poi) return null
                   return (
-                    <div
+                    <motion.div
                       key={stop.poiId}
+                      layout
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.32, ease: 'easeOut' }}
                       className={`relative flex items-center gap-2.5 rounded-md px-1 py-[6px] transition ${
                         selectedPoiId === stop.poiId ? 'bg-ink-900/[.08]' : 'hover:bg-ink-900/[.05]'
                       }`}
@@ -159,7 +175,7 @@ export function QuestJournal() {
                         </span>
                       </button>
                       <StatusPill status={stop.status} onClick={() => cycleStatus(stop.poiId)} />
-                    </div>
+                    </motion.div>
                   )
                 })}
               </div>
@@ -169,7 +185,9 @@ export function QuestJournal() {
 
         {!itinerary.length && (
           <p className="px-1 py-6 text-center font-body text-[14px] italic text-ink-600">
-            No quests accepted yet. Let the Orchestrator scout the map.
+            {generating
+              ? 'The Orchestrator is still scouting — stops appear here as they are settled.'
+              : 'No quests accepted yet. Let the Orchestrator scout the map.'}
           </p>
         )}
       </div>

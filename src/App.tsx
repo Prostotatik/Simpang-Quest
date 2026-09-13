@@ -74,12 +74,11 @@ export default function App() {
                 <Logo />
               </button>
 
-              {/* The party grows with the group and takes the rail's slack; the
-                  trip summary below it always stays in view. */}
-              <div className="flex min-h-0 flex-1 flex-col gap-[18px] overflow-x-clip px-2">
-                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-clip">
-                  <PartyPanel />
-                </div>
+              {/* The party takes the rail's slack and scrolls its own list
+                  inside the parchment — the panel itself never moves, so its
+                  rods and rivets stay put and it keeps the trip card's width. */}
+              <div className="flex min-h-0 flex-1 flex-col gap-[18px] px-2">
+                <PartyPanel />
                 <TripPanel />
               </div>
 

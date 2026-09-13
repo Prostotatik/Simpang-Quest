@@ -134,7 +134,7 @@ export const useStore = create<State>((set, get) => ({
   rejected: [],
   passed: [],
   scoutLinks: [],
-  collapsed: { legend: true },
+  collapsed: {},
   reveal: {},
   generating: false,
   reasoningStep: 0,

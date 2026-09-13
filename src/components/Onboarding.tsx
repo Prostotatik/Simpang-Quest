@@ -41,10 +41,12 @@ export function Onboarding() {
           the peninsula for the route that fits everyone.
         </motion.p>
 
-        <div className="mt-7 grid w-full gap-5 lg:grid-cols-[1.35fr_1fr]">
+        {/* minmax(0,…) so a long chip or name cannot push a column past its
+            share of the row — grid tracks default to min-content otherwise. */}
+        <div className="mt-7 grid w-full gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
           <motion.section
             initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.5 }}
-            className="parchment px-5 pb-5 pt-4"
+            className="parchment min-w-0 px-5 pb-5 pt-4"
           >
             <div className="flex items-center gap-2.5">
               <IconUsers className="h-[21px] w-[21px] text-ink-800" />
@@ -78,7 +80,7 @@ export function Onboarding() {
               </p>
             )}
 
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
               {members.map((m) => (
                 <button
                   key={m.id}
@@ -138,8 +140,8 @@ export function Onboarding() {
                 note={trip.limits.radiusFrom === 'regions' ? 'to reach requested places' : undefined} />
               <InfoRow icon={<IconClock className="h-[19px] w-[19px]" />} label="Trip length"
                 value={`${trip.maxDurationDays} ${trip.maxDurationDays === 1 ? 'day' : 'days'}`}
-                note={trip.limits.capNames.length
-                  ? `capped by ${trip.limits.capNames[0]}${trip.limits.capNames.length > 1 ? ` +${trip.limits.capNames.length - 1}` : ''}`
+                note={trip.limits.cappedByMember
+                  ? `the party's ${trip.limits.capDays}-day appetite`
                   : 'the shared free window'} />
               <InfoRow icon={<IconCoin className="h-[19px] w-[19px]" />} label="Budget (total)"
                 value={`RM ${trip.budgetRM.toLocaleString('en-US')}`} />

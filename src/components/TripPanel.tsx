@@ -51,8 +51,8 @@ export function TripPanel() {
           {trip.maxTravelKm} km
         </Row>
         <Row icon={<IconClock className="h-[18px] w-[18px]" />} label="Limit" onClick={edit}>
-          {trip.limits.capNames.length
-            ? `${trip.limits.capDays}d — ${trip.limits.capNames[0]}${trip.limits.capNames.length > 1 ? ` +${trip.limits.capNames.length - 1}` : ''}`
+          {trip.limits.cappedByMember
+            ? `${trip.limits.capDays}d appetite`
             : `${trip.limits.windowDays}d free window`}
         </Row>
         <Row icon={<IconCoin className="h-[18px] w-[18px]" />} label="Budget" onClick={edit}>

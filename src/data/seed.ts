@@ -27,7 +27,7 @@ export const SEED_TRIP: Trip = {
   limits: {
     windowDays: 1,
     capDays: 1,
-    capNames: [],
+    cappedByMember: false,
     requestedRegions: [],
     radiusFrom: 'days',
   },
@@ -50,7 +50,7 @@ export interface PartyPreset {
 export const PARTY_PRESETS: PartyPreset[] = [
   {
     id: 'weekend',
-    label: 'Weekend pair',
+    label: 'Weekend',
     blurb: 'Two people, one free weekend, neither wants more than two days out.',
     members: [
       {
@@ -71,8 +71,8 @@ export const PARTY_PRESETS: PartyPreset[] = [
   },
   {
     id: 'friends',
-    label: 'Friends, one week',
-    blurb: 'Four friends with a full week free — but Kai can only give seven days.',
+    label: 'Friends',
+    blurb: 'Four friends with a long window free, but no appetite for all of it.',
     members: [
       {
         id: 'm-alex', name: 'Alex', age: 24, vegan: true, disability: false,
@@ -106,7 +106,7 @@ export const PARTY_PRESETS: PartyPreset[] = [
   },
   {
     id: 'expedition',
-    label: 'Big group, full expedition',
+    label: 'Expedition',
     blurb: 'Six travellers, a fortnight free, and Langkawi on somebody’s wishlist.',
     members: [
       {

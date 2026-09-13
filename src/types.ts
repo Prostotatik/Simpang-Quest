@@ -66,8 +66,8 @@ export interface TripLimits {
   windowDays: number
   /** The tightest personal `maxTripDays` in the party. */
   capDays: number
-  /** Who set `capDays`. Empty when the shared window was the binding limit. */
-  capNames: string[]
+  /** True when `capDays` cut the shared window short rather than the reverse. */
+  cappedByMember: boolean
   /** Regions somebody asked for, in the order they were first requested. */
   requestedRegions: string[]
   /** How the travel radius was decided. */

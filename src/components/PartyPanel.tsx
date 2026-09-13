@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { prettyTag } from '../data/tags'
 import { useStore } from '../store/useStore'
@@ -10,10 +11,37 @@ export function PartyPanel() {
   const addMember = useStore((s) => s.addMember)
   const setEditingMember = useStore((s) => s.setEditingMember)
 
+  // The list scrolls inside the parchment rather than the panel scrolling in
+  // the rail: measure the slack the rail leaves us and cap the body at it.
+  const shellRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const [bodyMaxHeight, setBodyMaxHeight] = useState<number | undefined>()
+
+  useEffect(() => {
+    const shell = shellRef.current
+    if (!shell) return
+    const measure = () => {
+      const list = listRef.current
+      const panel = list?.closest('section')
+      if (!list || !panel) return
+      // Measure the panel's chrome — rods, heading, rule, padding — rather than
+      // guessing it, so the list ends exactly where the shell does.
+      const chrome = panel.getBoundingClientRect().height - list.getBoundingClientRect().height
+      setBodyMaxHeight(Math.max(120, shell.clientHeight - chrome))
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(shell)
+    return () => ro.disconnect()
+  }, [])
+
   return (
+    <div ref={shellRef} className="flex min-h-0 flex-1 flex-col">
     <ScrollPanel
       id="party"
       title="The Party"
+      bodyMaxHeight={bodyMaxHeight}
+      bodyRef={listRef}
       icon={<IconUsers className="h-[19px] w-[19px] shrink-0 text-ink-800" />}
       meta={<span className="shrink-0 font-body text-[14px] text-ink-600">{members.length}/6</span>}
       action={
@@ -76,5 +104,6 @@ export function PartyPanel() {
         </button>
       </div>
     </ScrollPanel>
+    </div>
   )
 }
