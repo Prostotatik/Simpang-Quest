@@ -1,6 +1,7 @@
 import { POIS } from '../data/pois'
 import { startById } from '../data/startLocations'
 import type { ItineraryStop, Member, Poi, ScoredPoi, ScoutLink, Trip } from '../types'
+import { islandOf } from './directions'
 import { DAY_ACTIVE_HOURS, haversineKm, tripDays } from './scoring'
 
 export interface PlanResult {
@@ -95,10 +96,43 @@ export const scheduleDays = (seq: { poi: Poi }[], start: Pt) => {
 }
 
 /**
+ * Pull every stop on one island into a single contiguous run.
+ *
+ * Nearest-neighbour ordering happily interleaves Langkawi with the mainland,
+ * because by straight-line distance the next island stop is rarely the closest
+ * thing. Each interleave costs a real ferry crossing, so the map ends up with
+ * a sea route drawn back and forth across dry land. Clustering first means the
+ * party sails out once, sees the island, and sails back.
+ */
+const clusterIslands = <T,>(ordered: T[], idOf: (item: T) => string): T[] => {
+  const seen = new Set<string>()
+  const out: T[] = []
+
+  ordered.forEach((item) => {
+    const island = islandOf(idOf(item))
+    if (!island) { out.push(item); return }
+    if (seen.has(island)) return
+    seen.add(island)
+    // Take every stop on this island, in the order they were already walked.
+    ordered.forEach((other) => {
+      if (islandOf(idOf(other)) === island) out.push(other)
+    })
+  })
+
+  return out
+}
+
+/**
  * Greedy nearest-neighbour walk out from the base, then 2-opt over the closed
  * loop so the trip comes home without a long backtrack.
  */
-export const orderLoop = <T,>(items: T[], start: Pt, at: (item: T) => Pt): T[] => {
+export const orderLoop = <T,>(
+  items: T[],
+  start: Pt,
+  at: (item: T) => Pt,
+  /** Supply to keep island stops together; omit for plain geometric ordering. */
+  idOf?: (item: T) => string,
+): T[] => {
   const ordered: T[] = []
   const pool = [...items]
   let cursor: Pt = start
@@ -138,7 +172,10 @@ export const orderLoop = <T,>(items: T[], start: Pt, at: (item: T) => Pt): T[] =
     }
     if (!improved) break
   }
-  return ordered
+
+  // 2-opt optimises straight-line distance and knows nothing about water, so
+  // the island run is restored after it, not before.
+  return idOf ? clusterIslands(ordered, idOf) : ordered
 }
 
 /**
@@ -190,7 +227,7 @@ export const planTrip = (scored: ScoredPoi[], members: Member[], trip: Trip): Pl
     if (spend + cost > trip.budgetRM) continue
     if ((regionCount[s.poi.region] ?? 0) >= perRegionCap) continue
 
-    const trial = orderLoop([...picked, s], start, (x) => x.poi)
+    const trial = orderLoop([...picked, s], start, (x) => x.poi, (x) => x.poi.id)
     if (scheduleDays(trial, start).days > days) continue
 
     picked.push(s)
@@ -198,7 +235,7 @@ export const planTrip = (scored: ScoredPoi[], members: Member[], trip: Trip): Pl
     spend += cost
   }
 
-  const ordered = orderLoop(picked, start, (s) => s.poi)
+  const ordered = orderLoop(picked, start, (s) => s.poi, (s) => s.poi.id)
 
   // Same clock the picker used, so what was accepted is exactly what is shown.
   const { dayOf } = scheduleDays(ordered, start)

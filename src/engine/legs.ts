@@ -1,5 +1,5 @@
 import { HUBS, fareRM, type Hub, type HubKind } from '../data/hubs'
-import type { LL } from './directions'
+import { islandOf, type LL } from './directions'
 import { haversineKm } from './scoring'
 import { CROSSING_MODE, type TravelMode } from './travel'
 import { decideLandMode } from './modePlan'
@@ -60,6 +60,12 @@ export const buildLegs = (
   start: LL,
   stops: Waypoint[],
   closeLoop: boolean,
+  /**
+   * What the journey sets out from. Defaults to the party's home base, which is
+   * always on the mainland; a scouting probe passes its own anchor, which may
+   * itself be an island stop.
+   */
+  origin: { id: string; drivable: boolean } = { id: 'base', drivable: true },
 ): { legs: PlanLeg[]; hubs: HubStop[] } => {
   const legs: PlanLeg[] = []
   const hubs: HubStop[] = []
@@ -68,11 +74,20 @@ export const buildLegs = (
   const hop = (a: Waypoint, b: Waypoint, gate = b.id) => {
     const straight = haversineKm(a.ll, b.ll)
 
-    if (a.drivable && b.drivable) {
+    // Two stops on the same island are a drive, not a crossing: Pantai Cenang
+    // to the Sky Bridge is a road on Langkawi. Only water between *different*
+    // landmasses needs a ferry or a flight — checking `drivable` alone put a
+    // sea route between neighbours on the same island, drawn over dry land.
+    const sameIsland = islandOf(a.id) !== null && islandOf(a.id) === islandOf(b.id)
+
+    if ((a.drivable && b.drivable) || sameIsland) {
       legs.push({
         key: `${a.id}>${b.id}`, toId: gate,
         mode: decideLandMode({ fromId: a.id, toId: b.id, km: straight, hubTransfer: false }),
-        km: straight, from: a.ll, to: b.ll, drivable: true,
+        km: straight, from: a.ll, to: b.ll,
+        // An island road is still a road, but the Directions service has no
+        // network out there, so it draws as a curved trail rather than asking.
+        drivable: !sameIsland,
       })
       return
     }
@@ -124,7 +139,7 @@ export const buildLegs = (
     })
   }
 
-  const base: Waypoint = { id: 'base', ll: start, drivable: true }
+  const base: Waypoint = { id: origin.id, ll: start, drivable: origin.drivable }
   const chain = [base, ...stops]
   for (let i = 1; i < chain.length; i++) hop(chain[i - 1], chain[i])
   if (closeLoop && stops.length) {

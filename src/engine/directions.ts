@@ -14,12 +14,29 @@ let serviceDisabled = false
 let chain: Promise<unknown> = Promise.resolve()
 let service: google.maps.DirectionsService | null = null
 
+/**
+ * Places that cannot be reached by road, grouped by the landmass they sit on.
+ *
+ * The grouping matters as much as the flag: everything on one island has to be
+ * visited in a single run, or the route pays for a crossing each time it hops
+ * back and forth — which is how a ferry ends up drawn straight over dry land.
+ */
+export const ISLAND_GROUPS: Record<string, string[]> = {
+  tioman: ['tioman-island', 'juara-beach', 'stay-tioman'],
+  redang: ['redang-island'],
+  langkawi: ['langkawi-skybridge', 'langkawi-cenang', 'langkawi-kilim', 'stay-langkawi'],
+}
+
 /** Islands and ferry hops — the driving service has nothing to say about them. */
-export const NON_DRIVABLE = new Set([
-  'tioman-island', 'juara-beach', 'stay-tioman',
-  'redang-island',
-  'langkawi-skybridge', 'langkawi-cenang', 'langkawi-kilim', 'stay-langkawi',
-])
+export const NON_DRIVABLE = new Set(Object.values(ISLAND_GROUPS).flat())
+
+/** Which island a place belongs to, or null when it is on the mainland. */
+export const islandOf = (poiId: string): string | null => {
+  for (const [island, ids] of Object.entries(ISLAND_GROUPS)) {
+    if (ids.includes(poiId)) return island
+  }
+  return null
+}
 
 /** One service instance for the session: constructing it logs a deprecation notice. */
 const getService = () => {

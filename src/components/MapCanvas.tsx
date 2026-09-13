@@ -11,8 +11,7 @@ import { partialPath, useDrawnPaths } from './useDrawnPaths'
 import { NodeCard } from './NodeCard'
 import { haversineKm } from '../engine/scoring'
 import { NON_DRIVABLE, curveBetween, trailBetween, type LL } from '../engine/directions'
-import { CROSSING_MODE, MODE_PATH, type TravelMode } from '../engine/travel'
-import { decideLandMode } from '../engine/modePlan'
+import { MODE_PATH, type TravelMode } from '../engine/travel'
 import { buildLegs, type HubStop, type PlanLeg } from '../engine/legs'
 
 /** Calibrated against George Town / KL / Johor Bahru / Kota Bharu on the art. */
@@ -182,28 +181,31 @@ export function MapCanvas() {
     setHubStops(plan.hubs)
     setGoldLegs(plan.legs.map((l) => ({ ...l, path: curveBetween(l.from, l.to) })))
 
+    // Scouting probes cross water the same way the golden route does: through a
+    // real terminal. Drawing them straight from anchor to island is what put a
+    // ferry over dry land — so every probe goes through `buildLegs` too, which
+    // breaks a sea hop into drive → crossing → drive via the nearest hubs.
     const grey: Leg[] = scoutLinks.flatMap((link) => {
       const target = poiById(link.toPoiId)
       if (!target) return []
       const to = { lat: target.lat, lng: target.lng }
-      // Both ends matter: a probe leaving an island is a crossing even when it
-      // lands on the mainland, otherwise it draws as a train over open water.
-      const drivable = !NON_DRIVABLE.has(link.toPoiId) && !NON_DRIVABLE.has(link.fromId)
-      const km = haversineKm(link.from, to)
-      return [{
-        key: scoutKey(link.from, link.toPoiId),
+
+      const probe = buildLegs(
+        link.from,
+        [{ id: link.toPoiId, ll: to, drivable: !NON_DRIVABLE.has(link.toPoiId) }],
+        false,
+        // The probe leaves an island when its anchor sits on one, so the origin
+        // has to declare where it stands or the hop reads as a plain drive.
+        { id: link.fromId, drivable: !NON_DRIVABLE.has(link.fromId) },
+      )
+
+      return probe.legs.map((leg) => ({
+        ...leg,
+        // Keyed by the probe's destination so the reveal gate still matches.
+        key: `${scoutKey(link.from, link.toPoiId)}:${leg.key}`,
         toId: link.toPoiId,
-        mode: drivable
-          ? decideLandMode({
-              fromId: link.fromId, toId: link.toPoiId, km, hubTransfer: false,
-            })
-          : km > 320 ? CROSSING_MODE.airport : CROSSING_MODE.ferry,
-        km,
-        from: link.from,
-        to,
-        drivable,
-        path: curveBetween(link.from, to),
-      }]
+        path: curveBetween(leg.from, leg.to),
+      }))
     })
     setGreyLegs(grey)
 

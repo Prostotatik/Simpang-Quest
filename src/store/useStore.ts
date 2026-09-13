@@ -94,7 +94,7 @@ const reorder = (stops: ItineraryStop[], trip: Trip): ItineraryStop[] => {
   const withPoi = stops
     .map((stop) => ({ stop, poi: poiById(stop.poiId) }))
     .filter((x): x is { stop: ItineraryStop; poi: NonNullable<ReturnType<typeof poiById>> } => !!x.poi)
-  const ordered = orderLoop(withPoi, base, (x) => x.poi)
+  const ordered = orderLoop(withPoi, base, (x) => x.poi, (x) => x.poi.id)
 
   const maxDay = Math.max(1, trip.maxDurationDays)
   let day = 1
